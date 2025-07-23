@@ -11,6 +11,7 @@ target_sources(
     tooling PRIVATE
     ${EVMC_INCLUDE_DIR}/evmc/tooling.hpp
     run.cpp
+    mcstring.cpp
 )
 
 if(EVMC_INSTALL)

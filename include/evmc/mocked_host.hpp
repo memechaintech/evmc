@@ -74,6 +74,11 @@ struct MockedAccount
 /// Mocked EVMC Host implementation.
 class MockedHost : public Host
 {
+
+
+    void * get_mmc_host() noexcept final{
+        return 0;
+    }
 public:
     /// LOG record.
     struct log_record
@@ -93,6 +98,8 @@ public:
             return creator == other.creator && data == other.data && topics == other.topics;
         }
     };
+
+    
 
     /// The set of all accounts in the Host, organized by their addresses.
     std::unordered_map<address, MockedAccount> accounts;

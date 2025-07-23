@@ -3,6 +3,7 @@
 // Licensed under the Apache License, Version 2.0.
 #pragma once
 
+#include "evmc.h"
 #include <evmc/evmc.h>
 #include <evmc/helpers.h>
 #include <evmc/hex.hpp>
@@ -12,6 +13,7 @@
 #include <ostream>
 #include <string_view>
 #include <utility>
+#include "mcstring.h"
 
 static_assert(EVMC_LATEST_STABLE_REVISION <= EVMC_MAX_REVISION,
               "latest stable revision ill-defined");
@@ -440,6 +442,7 @@ class HostInterface
 public:
     virtual ~HostInterface() noexcept = default;
 
+    virtual void * get_mmc_host() noexcept=0;
     /// @copydoc evmc_host_interface::account_exists
     virtual bool account_exists(const address& addr) const noexcept = 0;
 
@@ -502,6 +505,17 @@ public:
 };
 
 
+
+
+typedef mcstring (*get_blockhash_ft)( uint256be);
+typedef void(*debug_ft)(mcstring msg);
+
+struct MmcHost{
+    get_blockhash_ft get_blockhash;
+    debug_ft debug;
+};
+
+
 /// Wrapper around EVMC host context / host interface.
 ///
 /// To be used by VM implementations as better alternative to using ::evmc_host_context directly.
@@ -509,6 +523,10 @@ class HostContext : public HostInterface
 {
     const evmc_host_interface* host = nullptr;
     evmc_host_context* context = nullptr;
+
+    void * get_mmc_host() noexcept final{
+        return host->get_mmc_host(context);
+    }
 
 public:
     /// Default constructor for null Host context.
@@ -520,6 +538,10 @@ public:
     HostContext(const evmc_host_interface& interface, evmc_host_context* ctx) noexcept
       : host{&interface}, context{ctx}
     {}
+
+    MmcHost * HostFunc(){
+        return (MmcHost*)get_mmc_host();
+    }
 
     bool account_exists(const address& address) const noexcept final
     {
@@ -774,6 +796,11 @@ inline VM::VM(evmc_vm* vm,
 
 namespace internal
 {
+
+inline void * get_mmc_host(evmc_host_context *h){
+    return Host::from_context(h)->get_mmc_host();
+}
+
 inline bool account_exists(evmc_host_context* h, const evmc_address* addr) noexcept
 {
     return Host::from_context(h)->account_exists(*addr);
@@ -882,6 +909,7 @@ inline void set_transient_storage(evmc_host_context* h,
 inline const evmc_host_interface& Host::get_interface() noexcept
 {
     static constexpr evmc_host_interface interface = {
+        ::evmc::internal::get_mmc_host,
         ::evmc::internal::account_exists,
         ::evmc::internal::get_storage,
         ::evmc::internal::set_storage,

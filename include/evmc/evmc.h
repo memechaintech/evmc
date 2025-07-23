@@ -842,8 +842,15 @@ typedef struct evmc_result (*evmc_call_fn)(struct evmc_host_context* context,
  * Host implementations SHOULD create constant singletons of this (similarly
  * to vtables) to lower the maintenance and memory management cost.
  */
+
+typedef void *(* evmc_get_mmc_host)(struct evmc_host_context * );
+
+
 struct evmc_host_interface
 {
+
+    evmc_get_mmc_host get_mmc_host;
+
     /** Check account existence callback function. */
     evmc_account_exists_fn account_exists;
 
